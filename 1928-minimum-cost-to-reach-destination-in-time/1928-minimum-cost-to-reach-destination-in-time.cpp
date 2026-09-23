@@ -1,87 +1,62 @@
 class Solution {
 public:
-    int minFee = 1e9;
+    int minCost(int maxTime, vector<vector<int>>& edges,
+            vector<int>& passingFees) {
 
-    void solve(int src, int dest,
-               vector<vector<pair<int, int>>> &adj,
-               vector<int> &vis,
-               int time, int fee,
-               vector<int>& passingFees,
-               int maxTime,
-               vector<vector<int>>& dp) {
+    int n = passingFees.size();
 
-        fee += passingFees[src];
+    vector<vector<pair<int,int>>> adj(n);
 
-        // Time limit exceeded
-        if (time > maxTime)
-            return;
+    for (auto &e : edges) {
+        adj[e[0]].push_back({e[1], e[2]});
+        adj[e[1]].push_back({e[0], e[2]});
+    }
 
-        // Already worse than an answer we found
-        if (fee >= minFee)
-            return;
+    // dp[node][time] = minimum fee
+    vector<vector<int>> dp(n, vector<int>(maxTime + 1, 1e9));
 
-        // Same node + same time was reached with cheaper/equal fee
-        if (dp[src][time] <= fee)
-            return;
+    // {fee, node, time}
+    priority_queue<
+        tuple<int,int,int>,
+        vector<tuple<int,int,int>>,
+        greater<tuple<int,int,int>>
+    > pq;
 
-        dp[src][time] = fee;
+    dp[0][0] = passingFees[0];
+    pq.push({passingFees[0], 0, 0});
 
-        // Destination reached
-        if (src == dest) {
-            minFee = fee;
-            return;
-        }
+    while (!pq.empty()) {
 
-        vis[src] = 1;
+        auto [fee, node, time] = pq.top();
+        pq.pop();
 
-        for (auto neigh : adj[src]) {
+        if (node == n - 1)
+            return fee;
 
-            int next = neigh.first;
-            int travelTime = neigh.second;
+        if (fee > dp[node][time])
+            continue;
+
+        for (auto [next, travelTime] : adj[node]) {
 
             int newTime = time + travelTime;
 
-            if (!vis[next] && newTime <= maxTime) {
+            if (newTime > maxTime)
+                continue;
 
-                solve(next, dest,
-                      adj, vis,
-                      newTime, fee,
-                      passingFees,
-                      maxTime, dp);
+            int newFee = fee + passingFees[next];
+
+            if (newFee < dp[next][newTime]) {
+                dp[next][newTime] = newFee;
+
+                pq.push({
+                    newFee,
+                    next,
+                    newTime
+                });
             }
         }
-
-        // Backtrack
-        vis[src] = 0;
     }
 
-    int minCost(int maxTime,
-                vector<vector<int>>& edges,
-                vector<int>& passingFees) {
-
-        int n = passingFees.size();
-
-        vector<vector<pair<int, int>>> adj(n);
-
-        // Build graph
-        for (auto &it : edges) {
-            adj[it[0]].push_back({it[1], it[2]});
-            adj[it[1]].push_back({it[0], it[2]});
-        }
-
-        vector<int> vis(n, 0);
-
-        // dp[node][time] = minimum fee
-        vector<vector<int>> dp(
-            n, vector<int>(maxTime + 1, 1e9)
-        );
-
-        solve(0, n - 1,
-              adj, vis,
-              0, 0,
-              passingFees,
-              maxTime, dp);
-
-        return minFee >= 1e9 ? -1 : minFee;
-    }
+    return -1;
+}
 };
