@@ -13,7 +13,7 @@ public:
                 num = num/10;
                 sum+=digit;
                 if(sum>i){
-                    continue;
+                    break;
                 }
             }
 
